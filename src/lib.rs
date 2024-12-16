@@ -1,5 +1,16 @@
 pub mod renderer;
 
+#[derive(Debug)]
+pub enum RequestResult{
+    Ok(String),
+    UnsupportedURI(String),
+    InvalidRequest,
+    InvalidMethod,
+    StreamError(String),
+    FileNotFound(String),
+    FilePathNotFound,
+}
+
 // use std::thread;
 
 // pub enum PoolCreationError{
