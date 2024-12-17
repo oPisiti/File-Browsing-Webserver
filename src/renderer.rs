@@ -44,17 +44,34 @@ pub fn render_index_page(page: &mut String, flags: &RenderFlags) -> Result<(), s
                 for entry in entries{
                     let entry = entry?;
 
+                    list_html += "<li>";
+                    
+                    // File name
                     if let Some(name) = entry.path().file_name(){
-                        list_html += "<li>";
-                        list_html += name.to_str().unwrap_or_default();
-                        list_html += "</li>";
+                        let file_name = name.to_str().unwrap_or_default();
+                        if entry.file_type()?.is_dir(){
+                            
+                            // Determine the correct url to reference
+                            let mut href_path = String::from("/fs");
+                            if flags.fs_path != "/"{
+                                href_path.push_str(flags.fs_path.as_str());
+                            }
+                            href_path = format!("{href_path}/{file_name}");
+                            
+                            list_html += format!("<a href={href_path}>{file_name}</a>").as_str();
+                        }
+                        else{
+                            list_html += file_name;
+                        }
                     }
+
+                    list_html += "</li>";
                 }
 
                 list_html += "</ul>";
             },
             "{{up_level_link}}" => {
-                list_html  = String::from("<a href=/fs");
+                list_html = String::from("<a href=/fs");
 
                 let fs_path = flags.fs_path
                     .split("/")
