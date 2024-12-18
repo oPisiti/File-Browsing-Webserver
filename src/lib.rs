@@ -1,7 +1,7 @@
 pub mod renderer;
 
 #[derive(Debug)]
-pub enum RequestResult{
+pub enum RequestResult {
     Ok(String),
     UnsupportedURI(String),
     InvalidRequest,
@@ -20,7 +20,6 @@ pub enum RequestResult{
 // pub struct ThreadPool{
 //     threads: Vec<thread::JoinHandle<()>>
 // }
-
 
 // impl ThreadPool{
 //     // /// Create a new ThreadPool.
@@ -60,4 +59,4 @@ pub enum RequestResult{
 //         F: FnOnce() + Send + 'static,
 //     {
 //     }
-// }   
+// }
