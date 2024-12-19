@@ -15,6 +15,7 @@ impl Default for RenderFlags {
 #[derive(Debug)]
 pub enum RenderError {
     InvalidId(String),
+    PathOutsideBaseFsPath,
     FilesList,
 }
 
@@ -26,9 +27,14 @@ pub enum RenderError {
 /// Supported identifiers:
 /// - {{files_list}}
 /// - {{up_level_link}}
-pub fn render_index_page(page: &mut String, flags: &RenderFlags) -> Result<(), RenderError> {
+/// - {{curr_path}}
+pub fn render_index_page(
+    page: &mut String,
+    flags: &RenderFlags,
+    base_fs_path: &str,
+) -> Result<(), RenderError> {
     // Supported identifiers must be added here and handled below
-    let identifiers = ["{{files_list}}", "{{up_level_link}}"];
+    let identifiers = ["{{files_list}}", "{{up_level_link}}", "{{curr_path}}"];
     let mut tokens;
 
     // This is quite an inefficient way of doing this.
@@ -44,8 +50,20 @@ pub fn render_index_page(page: &mut String, flags: &RenderFlags) -> Result<(), R
 
         // Render and stitch back together
         let list_html = match id {
-            "{{files_list}}" => render_files_list(&flags.fs_path).unwrap_or_default(),
-            "{{up_level_link}}" => render_up_level_link(&flags.fs_path).unwrap_or_default(),
+            "{{files_list}}" => {
+                render_files_list(&flags.fs_path, base_fs_path).unwrap_or_else(|e| match e {
+                    RenderError::FilesList => "<br>Unable to read into directory".to_string(),
+                    _ => "".to_string(),
+                })
+            }
+            "{{up_level_link}}" => render_up_level_link(&flags.fs_path, base_fs_path)
+                .unwrap_or_else(|e| match e {
+                    RenderError::PathOutsideBaseFsPath => format!(
+                        "Access denied. Go back to <a href=/fs{base_fs_path}>{base_fs_path}</a>"
+                    ),
+                    _ => "".to_string(),
+                }),
+            "{{curr_path}}" => flags.fs_path.to_string(),
             _ => return Err(RenderError::InvalidId("Error rendering file".to_string())),
         };
 
@@ -55,8 +73,13 @@ pub fn render_index_page(page: &mut String, flags: &RenderFlags) -> Result<(), R
     Ok(())
 }
 
-fn render_files_list(path: &str) -> Result<String, RenderError> {
-    let entries = fs::read_dir(&path).map_err(|_| RenderError::FilesList)?;
+fn render_files_list(path: &str, base_fs_path: &str) -> Result<String, RenderError> {
+    // Invalid path
+    if !path.starts_with(base_fs_path) {
+        return Err(RenderError::PathOutsideBaseFsPath);
+    }
+
+    let entries = fs::read_dir(path).map_err(|_| RenderError::FilesList)?;
 
     let mut output = String::from("<ul>");
 
@@ -95,7 +118,12 @@ fn render_files_list(path: &str) -> Result<String, RenderError> {
     Ok(output)
 }
 
-fn render_up_level_link(path: &str) -> Result<String, RenderError> {
+fn render_up_level_link(path: &str, base_fs_path: &str) -> Result<String, RenderError> {
+    // Invalid path
+    if !path.starts_with(base_fs_path) {
+        return Err(RenderError::PathOutsideBaseFsPath);
+    }
+
     let mut output = String::from("<a href=/fs");
 
     let fs_path = path.split("/").collect::<Vec<&str>>();

@@ -11,16 +11,16 @@ use file_browser::{renderer, RequestResult};
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
 
+    let base_path = "/home/leah";
     for stream in listener.incoming() {
         let stream = stream.unwrap();
 
-        let handle_result = handle_connection(stream);
+        let handle_result = handle_connection(stream, base_path);
 
         // If the handling of the request fails, deal with it
-        if !handle_result.is_err() {
-            match handle_result.unwrap() {
-                RequestResult::Ok(ok_msg) => println!("{ok_msg}"),
-                _ => (),
+        if handle_result.is_ok() {
+            if let RequestResult::Ok(ok_msg) = handle_result.unwrap() {
+                println!("{ok_msg}")
             }
         } else {
             match handle_result.unwrap_err() {
@@ -40,9 +40,14 @@ fn main() {
     }
 }
 
-fn handle_connection(mut stream: TcpStream) -> Result<RequestResult, RequestResult> {
+fn handle_connection(
+    mut stream: TcpStream,
+    base_path: &str,
+) -> Result<RequestResult, RequestResult> {
     let pages_path = String::from("pages/");
     let buf_reader = BufReader::new(&mut stream);
+
+    const FS_ID: &str = "/fs";
 
     // Get the http header tokens
     let request_line = buf_reader.lines().next().unwrap().unwrap();
@@ -73,14 +78,14 @@ fn handle_connection(mut stream: TcpStream) -> Result<RequestResult, RequestResu
             thread::sleep(Duration::from_secs(5));
             file_name += "sleep.html"
         }
-        uri if uri.starts_with("/fs") => {
+        uri if uri.starts_with(FS_ID) => {
             file_name += "index.html";
             is_static_page = false;
 
-            if uri == "/fs" {
+            if uri == FS_ID {
                 render_flags.fs_path = String::from("/");
             } else {
-                render_flags.fs_path = uri["/fs".len()..].to_string();
+                render_flags.fs_path = uri[FS_ID.len()..].to_string();
             }
         }
         _ => {
@@ -92,7 +97,6 @@ fn handle_connection(mut stream: TcpStream) -> Result<RequestResult, RequestResu
 
     // Attempt to read the response file and create response message
     let page_content = fs::read_to_string(&file_name);
-    let response;
     if page_content.is_err() {
         return Err(RequestResult::FileNotFound(
             format!("File '{file_name}' not found").to_string(),
@@ -102,12 +106,12 @@ fn handle_connection(mut stream: TcpStream) -> Result<RequestResult, RequestResu
 
     // Render index page, if required
     if !is_static_page {
-        renderer::render_index_page(&mut page_content, &render_flags)
+        renderer::render_index_page(&mut page_content, &render_flags, base_path)
             .map_err(|_| RequestResult::FilePathNotFound)?;
     }
 
     // Create and send the response back upstream
-    response = create_http_response(status_line, page_content);
+    let response = create_http_response(status_line, page_content);
     stream
         .write_all(response.as_bytes())
         .map_err(|_| RequestResult::StreamError("Unable to send request".to_string()))?;
