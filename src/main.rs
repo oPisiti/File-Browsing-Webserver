@@ -6,10 +6,20 @@ use std::{
     time::Duration,
 };
 
-use file_browser::{renderer, RequestResult};
+// Custom 
+mod renderer;
+mod requests;
+mod threads;
+
+// For convenience
+use renderer::RenderError;
+use requests::RequestResult;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    const BIND_ADDR: &str = "127.0.0.1:7878";
+    let listener = TcpListener::bind(BIND_ADDR).unwrap();
+
+    println!("Serving files on http://localhost:7878/fs");
 
     let base_path = "/home/leah";
     for stream in listener.incoming() {
@@ -29,8 +39,9 @@ fn main() {
                 }
                 RequestResult::InvalidRequest => println!("Invalid request"),
                 RequestResult::InvalidMethod => println!("HTTP method not supported"),
-                RequestResult::StreamError(err) => println!("{err}"),
-                RequestResult::FileNotFound(err) => println!("{err}"),
+                RequestResult::FileNotFound(err)
+                | RequestResult::RenderingError(err)
+                | RequestResult::StreamError(err) => println!("{err}"),
                 RequestResult::FilePathNotFound => {
                     println!("Path specified in the url was not found")
                 }
@@ -106,8 +117,14 @@ fn handle_connection(
 
     // Render index page, if required
     if !is_static_page {
-        renderer::render_index_page(&mut page_content, &render_flags, base_path)
-            .map_err(|_| RequestResult::FilePathNotFound)?;
+        renderer::render_index_page(&mut page_content, &render_flags, base_path).map_err(|e| {
+            match e {
+                RenderError::InvalidId(err_msg) => RequestResult::RenderingError(err_msg),
+                _ => { 
+                    println!("Other error");
+                    RequestResult::FilePathNotFound}
+            }
+        })?;
     }
 
     // Create and send the response back upstream

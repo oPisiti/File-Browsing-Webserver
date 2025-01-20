@@ -1,4 +1,6 @@
+use regex::Regex;
 use std::fs;
+
 
 pub struct RenderFlags {
     pub fs_path: String,
@@ -34,14 +36,17 @@ pub fn render_index_page(
     base_fs_path: &str,
 ) -> Result<(), RenderError> {
     // Supported identifiers must be added here and handled below
-    let identifiers = ["{{files_list}}", "{{up_level_link}}", "{{curr_path}}"];
+    let identifiers = ["files_list", "up_level_link", "curr_path"];
     let mut tokens;
-
+    
     // This is quite an inefficient way of doing this.
     // However, this project does not aim to render pages with multiple
     // identifiers, neither with multiple versions of such identifier
     for id in identifiers {
-        tokens = page.split(id).collect::<Vec<&str>>();
+        let rule = "\\{\\{".to_owned() + id + "\\}\\}";
+        let re = Regex::new(&rule).unwrap();
+        
+        tokens = re.split(&page).collect::<Vec<&str>>();
 
         // Identifier not found
         if tokens.len() < 2 {
@@ -50,21 +55,26 @@ pub fn render_index_page(
 
         // Render and stitch back together
         let list_html = match id {
-            "{{files_list}}" => {
+            "files_list" => {
                 render_files_list(&flags.fs_path, base_fs_path).unwrap_or_else(|e| match e {
                     RenderError::FilesList => "<br>Unable to read into directory".to_string(),
                     _ => "".to_string(),
                 })
             }
-            "{{up_level_link}}" => render_up_level_link(&flags.fs_path, base_fs_path)
+            "up_level_link" => render_up_level_link(&flags.fs_path, base_fs_path)
                 .unwrap_or_else(|e| match e {
                     RenderError::PathOutsideBaseFsPath => format!(
                         "Access denied. Go back to <a href=/fs{base_fs_path}>{base_fs_path}</a>"
                     ),
                     _ => "".to_string(),
                 }),
-            "{{curr_path}}" => flags.fs_path.to_string(),
-            _ => return Err(RenderError::InvalidId("Error rendering file".to_string())),
+            "curr_path" => flags.fs_path.to_string(),
+            _ => {
+                println!("INVALID ID");
+                return Err(RenderError::InvalidId(format!(
+                    "Error rendering file. Unsupported identifier: {id}"
+                )))
+            }
         };
 
         *page = tokens.join(&list_html);
