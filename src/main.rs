@@ -1,5 +1,4 @@
 use std::{net::{TcpListener, TcpStream}, sync::mpsc, thread, time::Duration};
-use ctrlc;
 
 // Custom
 mod handler;
@@ -42,7 +41,7 @@ fn main() {
         }
 
         // Check for Ctrl-C signal
-        if let Ok(_) = rx.try_recv(){
+        if rx.try_recv().is_ok(){
             println!("[SYS] Ctrl-C signal received. Exiting...");
             break;
         }
