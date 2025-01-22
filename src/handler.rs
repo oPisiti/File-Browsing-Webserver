@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-// Custom 
+// Custom
 use crate::renderer;
 
 // For convenience
@@ -82,9 +82,10 @@ pub fn handle_connection(
         renderer::render_index_page(&mut page_content, &render_flags, base_path).map_err(|e| {
             match e {
                 RenderError::InvalidId(err_msg) => RequestResult::RenderingError(err_msg),
-                _ => { 
+                _ => {
                     println!("Other error");
-                    RequestResult::FilePathNotFound}
+                    RequestResult::FilePathNotFound
+                }
             }
         })?;
     }

@@ -1,6 +1,6 @@
 use std::net::TcpListener;
 
-// Custom 
+// Custom
 mod handler;
 mod renderer;
 mod requests;
@@ -15,11 +15,14 @@ fn main() {
     const BASE_PATH: &str = "/home/leah";
     let listener = TcpListener::bind("127.0.0.1:".to_owned() + BIND_PORT).unwrap();
 
-    println!("[INFO] {}", "Serving files on http://localhost:".to_owned() + BIND_PORT + "/fs");
+    println!(
+        "[INFO] {}",
+        "Serving files on http://localhost:".to_owned() + BIND_PORT + "/fs"
+    );
 
     let pool_size: usize = 4;
     let thread_pool = ThreadPool::build(pool_size);
-    if thread_pool.is_err(){
+    if thread_pool.is_err() {
         println!("[ERR] Could not create threadpool with {pool_size} threads. Aborting");
     }
     let thread_pool = thread_pool.unwrap();
@@ -52,13 +55,14 @@ fn main() {
                     }
                     _ => println!("Request error"),
                 }
-            } 
+            }
         });
 
         // Deal with threadpool error
-        if let Err(ThreadPoolError::ClosureExecError(msg)) = stream_handle{
+        if let Err(ThreadPoolError::ClosureExecError(msg)) = stream_handle {
             println!("[ERR] {msg}");
         }
     }
-}
 
+    println!("Shutdown complete!");
+}
