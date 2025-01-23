@@ -1,9 +1,14 @@
 # A custom webserver built from scratch with Rust
 
-This is a simple web server built from the ground up using Rust. The server is designed to demonstrate basic networking concepts, HTTP request handling, and multi-threading in Rust.
+This is a simple web server built from the ground up using Rust. 
+
+Its main goal is to allow for file browsing the host's file system.
+
+The server is designed to demonstrate basic networking concepts, HTTP request handling, and multi-threading in Rust.
 
 ## Features
 
+- Serve the file system
 - Basic HTTP request/response handling
 - Multi-threaded requests handling, capped at 4 threads
 - Custom routing and static file serving
