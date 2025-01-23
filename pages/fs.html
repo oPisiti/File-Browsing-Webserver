@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>I have slept!</title>
+    <title>Index page!</title>
     <style>
       body {
         background-color: Canvas;
@@ -21,6 +21,11 @@
     </style>
   </head>
   <body>
-    <h1>Hello, I have slept!</h1>
+    <h1>File system!</h1>
+    <div class="container">
+      <h2>Current directory: {{curr_path}}</h2>
+      {{up_level_link}}
+      {{files_list}}
+    </div>      
   </body>
 </html>

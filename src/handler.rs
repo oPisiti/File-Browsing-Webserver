@@ -45,14 +45,14 @@ pub fn handle_connection(
     let mut is_static_page = true;
     let mut render_flags = renderer::RenderFlags::default();
     match uri {
-        "/" => file_name += "puppy.html",
+        "/" => file_name += "root.html",
         "/flowers" => file_name += "flowers.html",
         "/sleep" => {
             thread::sleep(Duration::from_secs(5));
             file_name += "sleep.html"
         }
         uri if uri.starts_with(FS_ID) => {
-            file_name += "index.html";
+            file_name += "fs.html";
             is_static_page = false;
 
             if uri == FS_ID {

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>I have slept!</title>
+    <title>A custom webserver!</title>
     <style>
       body {
         background-color: Canvas;
@@ -10,7 +10,7 @@
         color-scheme: light dark;
       }
       .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 100px auto;
             padding: 20px;
             background-color: rgb(42, 41, 41);
@@ -21,6 +21,12 @@
     </style>
   </head>
   <body>
-    <h1>Hello, I have slept!</h1>
+    <div class="container">
+      <h1>Hello! Check out the supported pages:</h1>
+      <ul>
+        <li><a href=/fs>File system</a></li>
+        <li><a href=/sleep>A 5 s sleeping page</a></li>
+      </ul>
+    </div>
   </body>
 </html>
