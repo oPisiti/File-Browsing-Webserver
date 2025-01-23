@@ -15,7 +15,7 @@ use crate::requests::RequestResult;
 
 pub fn handle_connection(
     mut stream: TcpStream,
-    base_path: &str,
+    base_path: String,
 ) -> Result<RequestResult, RequestResult> {
     let pages_path = String::from("pages/");
     let buf_reader = BufReader::new(&mut stream);
@@ -79,7 +79,7 @@ pub fn handle_connection(
 
     // Render index page, if required
     if !is_static_page {
-        renderer::render_index_page(&mut page_content, &render_flags, base_path).map_err(|e| {
+        renderer::render_index_page(&mut page_content, &render_flags, base_path.as_str()).map_err(|e| {
             match e {
                 RenderError::InvalidId(err_msg) => RequestResult::RenderingError(err_msg),
                 _ => {

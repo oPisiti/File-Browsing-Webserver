@@ -1,8 +1,9 @@
 [package]
 name = "file_browser"
 version = "0.1.0"
-edition = "2021"
+edition = "2025"
 
 [dependencies]
 ctrlc = "3.4.5"
 regex = "1.11.1"
+whoami = "1.5.2"

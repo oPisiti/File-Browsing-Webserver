@@ -1,4 +1,5 @@
 use std::{net::{TcpListener, TcpStream}, sync::mpsc, thread, time::Duration};
+use whoami;
 
 // Custom
 mod handler;
@@ -11,9 +12,10 @@ use requests::RequestResult;
 use threads::{ThreadPool, ThreadPoolError};
 
 const BIND_PORT: &str = "7878";
-const BASE_PATH: &str = "/home/leah";
 
 fn main() {
+    let base_path: String = format!("/home/{}", whoami::username());
+
     let listener = TcpListener::bind("127.0.0.1:".to_owned() + BIND_PORT).unwrap();
 
     println!(
@@ -37,7 +39,7 @@ fn main() {
     listener.set_nonblocking(true).expect("Cannot set non-blocking");
     loop{        
         if let Ok((stream, _)) = listener.accept(){
-            execute_request(&thread_pool, stream);           
+            execute_request(&thread_pool, stream, base_path.clone());           
         }
 
         // Check for Ctrl-C signal
@@ -51,10 +53,10 @@ fn main() {
     }
 }
 
-fn execute_request(thread_pool: &ThreadPool, stream_request: TcpStream){
+fn execute_request(thread_pool: &ThreadPool, stream_request: TcpStream, base_path: String){    
     // Handle stream in threadpool
     let stream_handle = thread_pool.execute(|| {
-        let handle_result = handler::handle_connection(stream_request, BASE_PATH);
+        let handle_result = handler::handle_connection(stream_request, base_path);
 
         // If the handling of the request fails, deal with it
         if handle_result.is_ok() {
