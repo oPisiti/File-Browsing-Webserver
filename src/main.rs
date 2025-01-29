@@ -1,11 +1,14 @@
+use log;
+use simple_logger::SimpleLogger;
 use std::{net::{TcpListener, TcpStream}, sync::mpsc, thread, time::Duration};
+use time::macros::format_description;
 use whoami;
 
 // Custom
 mod handler;
+mod threads;
 mod renderer;
 mod requests;
-mod threads;
 
 // For convenience
 use requests::RequestResult;
@@ -14,19 +17,26 @@ use threads::{ThreadPool, ThreadPoolError};
 const BIND_PORT: &str = "7878";
 
 fn main() {
+    SimpleLogger::new()
+        .with_level(log::LevelFilter::Trace)
+        .env()
+        .with_timestamp_format(format_description!("[year]-[month]-[day] [hour]:[minute]:[second]"))
+        .init()
+        .unwrap();
+
     let base_path: String = format!("/home/{}", whoami::username());
 
     let listener = TcpListener::bind("127.0.0.1:".to_owned() + BIND_PORT).unwrap();
 
-    println!(
-        "[INFO] {}",
+    log::info!(
+        "{}",
         "Serving files on http://localhost:".to_owned() + BIND_PORT + "/fs"
     );
 
     let pool_size: usize = 4;
     let thread_pool = ThreadPool::build(pool_size);
     if thread_pool.is_err() {
-        println!("[ERR] Could not create threadpool with {pool_size} threads. Aborting");
+        log::error!("Could not create threadpool with {pool_size} threads. Aborting");
     }
     let thread_pool = thread_pool.unwrap();
 
@@ -44,7 +54,7 @@ fn main() {
 
         // Check for Ctrl-C signal
         if rx.try_recv().is_ok(){
-            println!("[SYS] Ctrl-C signal received. Exiting...");
+            log::info!("Ctrl-C signal received. Exiting...");
             break;
         }
 
@@ -61,29 +71,28 @@ fn execute_request(thread_pool: &ThreadPool, stream_request: TcpStream, base_pat
         // If the handling of the request fails, deal with it
         if handle_result.is_ok() {
             if let RequestResult::Ok(ok_msg) = handle_result.unwrap() {
-                println!("[REQ] {ok_msg}")
+                log::debug!("{ok_msg}")
             }
         } else {
-            print!("[ERR] ");
             match handle_result.unwrap_err() {
                 RequestResult::UnsupportedURI(uri) => {
-                    println!("URI '{uri}' is not currently supported")
+                    log::error!("URI '{uri}' is not currently supported")
                 }
-                RequestResult::InvalidRequest => println!("Invalid request"),
-                RequestResult::InvalidMethod => println!("HTTP method not supported"),
+                RequestResult::InvalidRequest => log::error!("Invalid request"),
+                RequestResult::InvalidMethod => log::error!("HTTP method not supported"),
                 RequestResult::FileNotFound(err)
                 | RequestResult::RenderingError(err)
-                | RequestResult::StreamError(err) => println!("{err}"),
+                | RequestResult::StreamError(err) => log::error!("{err}"),
                 RequestResult::FilePathNotFound => {
-                    println!("Path specified in the url was not found")
+                    log::error!("Path specified in the url was not found")
                 }
-                _ => println!("Request error"),
+                _ => log::error!("Request error"),
             }
         }
     });
 
     // Deal with threadpool error
     if let Err(ThreadPoolError::ClosureExecError(msg)) = stream_handle {
-        println!("[ERR] {msg}");
+        log::error!("{msg}");
     }
 }

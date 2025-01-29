@@ -83,7 +83,7 @@ pub fn handle_connection(
             match e {
                 RenderError::InvalidId(err_msg) => RequestResult::RenderingError(err_msg),
                 _ => {
-                    println!("Other error");
+                    log::error!("File path not found");
                     RequestResult::FilePathNotFound
                 }
             }

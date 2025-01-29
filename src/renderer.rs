@@ -70,7 +70,7 @@ pub fn render_index_page(
             }
             "curr_path" => flags.fs_path.to_string(),
             _ => {
-                println!("INVALID ID");
+                log::error!("INVALID ID");
                 return Err(RenderError::InvalidId(format!(
                     "Error rendering file. Unsupported identifier: {id}"
                 )));

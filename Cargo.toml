@@ -5,5 +5,8 @@ edition = "2021"
 
 [dependencies]
 ctrlc = "3.4.5"
+log = "0.4.25"
 regex = "1.11.1"
+simple_logger = "5.0.0"
+time = "0.3.37"
 whoami = "1.5.2"

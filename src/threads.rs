@@ -47,11 +47,11 @@ impl ThreadPool {
 
                 match message_result {
                     Ok(job) => {
-                        println!("[THREAD] Thread {i} got a job! Executing...");
+                        log::debug!("Thread {i} got a job! Executing...");
                         job();
                     }
                     Err(_) => {
-                        println!("[THREAD] Thread {i} disconnected.");
+                        log::debug!("Thread {i} disconnected.");
                         break;
                     }
                 }
