@@ -100,7 +100,6 @@ async fn render_files_list(path: &str, base_fs_path: &str) -> Result<String, Ren
     let mut output = String::from("<ul>");
 
     while let Some(entry) = entries.next_entry().await.map_err(|_| RenderError::FilesList)?{
-        // let entry = entry.file_name().to_string_lossy().into_owned();
         output += "<li>";
 
         // File name
