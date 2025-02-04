@@ -32,7 +32,12 @@ async fn main(){
 
     loop{
         if let Ok((socket, _)) = listener.accept().await{
-            tokio::spawn(execute_request(socket, base_path.clone()));
+            let base_path_clone = base_path.clone();
+            tokio::spawn(async move {
+                log::info!("Request received!");
+                execute_request(socket, base_path_clone).await;
+            }
+            );
         }
     }
 }
