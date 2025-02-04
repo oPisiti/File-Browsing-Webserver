@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::fs;
+use tokio::fs;
 
 pub struct RenderFlags {
     pub fs_path: String,
@@ -29,7 +29,7 @@ pub enum RenderError {
 /// - {{files_list}}
 /// - {{up_level_link}}
 /// - {{curr_path}}
-pub fn render_index_page(
+pub async fn render_index_page(
     page: &mut String,
     flags: &RenderFlags,
     base_fs_path: &str,
@@ -55,18 +55,22 @@ pub fn render_index_page(
         // Render and stitch back together
         let list_html = match id {
             "files_list" => {
-                render_files_list(&flags.fs_path, base_fs_path).unwrap_or_else(|e| match e {
-                    RenderError::FilesList => "<br>Unable to read into directory".to_string(),
-                    _ => "".to_string(),
-                })
+                render_files_list(&flags.fs_path, base_fs_path).await.unwrap_or_else(|e| 
+                    match e {
+                        RenderError::FilesList => "<br>Unable to read into directory".to_string(),
+                        _ => "".to_string(),
+                    }
+                )
             }
             "up_level_link" => {
-                render_up_level_link(&flags.fs_path, base_fs_path).unwrap_or_else(|e| match e {
-                    RenderError::PathOutsideBaseFsPath => format!(
-                        "Access denied. Go back to <a href=/fs{base_fs_path}>{base_fs_path}</a>"
-                    ),
-                    _ => "".to_string(),
-                })
+                render_up_level_link(&flags.fs_path, base_fs_path).unwrap_or_else(|e| 
+                    match e {
+                        RenderError::PathOutsideBaseFsPath => format!(
+                            "Access denied. Go back to <a href=/fs{base_fs_path}>{base_fs_path}</a>"
+                        ),
+                        _ => "".to_string(),
+                    }
+                )
             }
             "curr_path" => flags.fs_path.to_string(),
             _ => {
@@ -83,26 +87,27 @@ pub fn render_index_page(
     Ok(())
 }
 
-fn render_files_list(path: &str, base_fs_path: &str) -> Result<String, RenderError> {
+async fn render_files_list(path: &str, base_fs_path: &str) -> Result<String, RenderError> {
     // Invalid path
     if !path.starts_with(base_fs_path) {
         return Err(RenderError::PathOutsideBaseFsPath);
     }
 
-    let entries = fs::read_dir(path).map_err(|_| RenderError::FilesList)?;
+    let mut entries = fs::read_dir(path)
+        .await
+        .map_err(|_| RenderError::FilesList)?;
 
     let mut output = String::from("<ul>");
 
-    for entry in entries {
-        let entry = entry.map_err(|_| RenderError::FilesList)?;
-
+    while let Some(entry) = entries.next_entry().await.map_err(|_| RenderError::FilesList)?{
+        // let entry = entry.file_name().to_string_lossy().into_owned();
         output += "<li>";
 
         // File name
         if let Some(name) = entry.path().file_name() {
             let file_name = name.to_str().unwrap_or_default();
 
-            let entry_file_type = entry.file_type();
+            let entry_file_type = entry.file_type().await;
             if entry_file_type.is_err() {
                 continue;
             }
