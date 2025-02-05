@@ -74,7 +74,7 @@ pub async fn handle_connection(
     let mut page_content = fs::read_to_string(&file_name)
         .await
         .map_err(|_| RequestError::FileNotFound(
-            format!("File '{file_name}' not found").to_string(),
+            format!("Error opening file '{file_name}'").to_string(),
         ))?;
 
     // Render index page, if required

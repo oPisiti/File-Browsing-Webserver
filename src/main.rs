@@ -8,6 +8,7 @@ mod requests;
 
 // For convenience
 use tokio::net::{TcpListener, TcpStream};
+use tokio::signal::ctrl_c;
 use requests::RequestError;
 
 const BIND_PORT: &str = "7878";
