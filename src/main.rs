@@ -57,9 +57,6 @@ fn main() {
             log::info!("Ctrl-C signal received. Exiting...");
             break;
         }
-
-        // Prevents from overusing cpu time
-        thread::sleep(Duration::from_millis(250));
     }
 }
 
