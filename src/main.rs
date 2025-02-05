@@ -1,6 +1,6 @@
 use log;
 use simple_logger::SimpleLogger;
-use std::{net::{TcpListener, TcpStream}, sync::mpsc, thread, time::Duration};
+use std::{net::{TcpListener, TcpStream}, num::NonZero, sync::mpsc, thread};
 use time::macros::format_description;
 use whoami;
 
@@ -16,7 +16,7 @@ use threads::{ThreadPool, ThreadPoolError};
 
 const BIND_PORT: &str = "7878";
 
-fn main() {
+fn main(){
     SimpleLogger::new()
         .with_level(log::LevelFilter::Trace)
         .env()
@@ -33,7 +33,13 @@ fn main() {
         "Serving files on http://localhost:".to_owned() + BIND_PORT + "/fs"
     );
 
-    let pool_size: usize = 4;
+    let pool_size = thread::available_parallelism()
+        .unwrap_or_else(|_|{
+            log::warn!("Could not obtain available parallelism. Defaulting to 1");
+            NonZero::new(1).expect("Could not default to 1. Aborting...")
+        })
+        .get();
+
     let thread_pool = ThreadPool::build(pool_size);
     if thread_pool.is_err() {
         log::error!("Could not create threadpool with {pool_size} threads. Aborting");
