@@ -7,51 +7,51 @@ mod renderer;
 mod requests;
 
 // For convenience
-use tokio::net::{TcpListener, TcpStream};
-use tokio::signal::ctrl_c;
 use requests::RequestError;
+use tokio::net::{TcpListener, TcpStream};
 
 const BIND_PORT: &str = "7878";
 
 #[tokio::main]
-async fn main(){
+async fn main() {
     SimpleLogger::new()
         .with_level(log::LevelFilter::Trace)
         .env()
-        .with_timestamp_format(format_description!("[year]-[month]-[day] [hour]:[minute]:[second]"))
+        .with_timestamp_format(format_description!(
+            "[year]-[month]-[day] [hour]:[minute]:[second]"
+        ))
         .init()
         .unwrap();
 
     let base_path: String = format!("/home/{}", whoami::username());
 
-    let listener = TcpListener::bind("127.0.0.1:".to_owned() + BIND_PORT).await.unwrap();
+    let listener = TcpListener::bind("127.0.0.1:".to_owned() + BIND_PORT)
+        .await
+        .unwrap();
 
     log::info!(
         "{}",
         "Serving files on http://localhost:".to_owned() + BIND_PORT + "/fs"
     );
 
-    loop{
-        if let Ok((socket, _)) = listener.accept().await{
+    loop {
+        if let Ok((socket, _)) = listener.accept().await {
             let base_path_clone = base_path.clone();
             tokio::spawn(async move {
                 log::info!("Request received!");
-                execute_request(socket, base_path_clone).await;
-            }
-            );
+                execute_and_log_request(socket, base_path_clone).await;
+            });
         }
     }
 }
 
-async fn execute_request(stream_request: TcpStream, base_path: String){    
+async fn execute_and_log_request(stream_request: TcpStream, base_path: String) {
     let handle_result = handler::handle_connection(stream_request, base_path).await;
 
     // If the handling of the request fails, deal with it
-    if handle_result.is_ok() {
-        let ok_msg = handle_result.unwrap();
-        log::debug!("{ok_msg}");
-    } else {
-        match handle_result.unwrap_err() {
+    match handle_result {
+        Ok(msg) => log::debug!("{msg}"),
+        Err(error) => match error {
             RequestError::UnsupportedURI(uri) => {
                 log::error!("URI '{uri}' is not currently supported")
             }
@@ -63,6 +63,6 @@ async fn execute_request(stream_request: TcpStream, base_path: String){
             RequestError::FilePathNotFound => {
                 log::error!("Path specified in the url was not found")
             }
-        }
+        },
     }
 }
