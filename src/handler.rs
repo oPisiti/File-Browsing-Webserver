@@ -11,12 +11,12 @@ use crate::renderer;
 
 // For convenience
 use crate::renderer::RenderError;
-use crate::requests::RequestResult;
+use crate::requests::RequestError;
 
 pub fn handle_connection(
     mut stream: TcpStream,
     base_path: String,
-) -> Result<RequestResult, RequestResult> {
+) -> Result<String, RequestError> {
     let pages_path = String::from("pages/");
     let buf_reader = BufReader::new(&mut stream);
 
@@ -29,12 +29,12 @@ pub fn handle_connection(
     // Check for valid method
     match request_tokens[0] {
         "GET" => (),
-        _ => return Err(RequestResult::InvalidMethod),
+        _ => return Err(RequestError::InvalidMethod),
     }
 
     // URI not present
     if request_tokens.len() < 2 {
-        return Err(RequestResult::InvalidRequest);
+        return Err(RequestError::InvalidRequest);
     }
 
     // Handle URI request
@@ -71,7 +71,7 @@ pub fn handle_connection(
     // Attempt to read the response file and create response message
     let page_content = fs::read_to_string(&file_name);
     if page_content.is_err() {
-        return Err(RequestResult::FileNotFound(
+        return Err(RequestError::FileNotFound(
             format!("File '{file_name}' not found").to_string(),
         ));
     }
@@ -81,10 +81,10 @@ pub fn handle_connection(
     if !is_static_page {
         renderer::render_index_page(&mut page_content, &render_flags, base_path.as_str()).map_err(|e| {
             match e {
-                RenderError::InvalidId(err_msg) => RequestResult::RenderingError(err_msg),
+                RenderError::InvalidId(err_msg) => RequestError::RenderingError(err_msg),
                 _ => {
                     log::error!("File path not found");
-                    RequestResult::FilePathNotFound
+                    RequestError::FilePathNotFound
                 }
             }
         })?;
@@ -94,13 +94,13 @@ pub fn handle_connection(
     let response = create_http_response(status_line, page_content);
     stream
         .write_all(response.as_bytes())
-        .map_err(|_| RequestResult::StreamError("Unable to send request".to_string()))?;
+        .map_err(|_| RequestError::StreamError("Unable to send request".to_string()))?;
 
     // Indicate result type to caller function
     if is_valid_uri {
-        Ok(RequestResult::Ok(String::from("Response successful!")))
+        Ok(String::from("Response successful!"))
     } else {
-        Err(RequestResult::UnsupportedURI(uri.to_string()))
+        Err(RequestError::UnsupportedURI(uri.to_string()))
     }
 }
 
